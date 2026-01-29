@@ -1,0 +1,117 @@
+% Generic lecture notes style
+% Author: Frank Pfenning <fp@cs.cmu.edu>
+
+% put dimensions into each individual file
+% \usepackage[margin=1.5in]{geometry}
+% \usepackage{microtype}
+\usepackage{palatino}
+\usepackage{amssymb}
+% \usepackage{mathpartir}
+\usepackage{proof-dashed}
+\setlength{\inferLineSkip}{4pt}
+\usepackage{fancyhdr}
+\usepackage{enumerate}
+\usepackage{comment}
+\usepackage{aliascnt}
+\usepackage[breaklinks=true,
+  colorlinks=true,
+  citecolor=blue,
+  linkcolor=blue,
+  urlcolor=blue]{hyperref}
+\usepackage{graphicx}
+\usepackage{stmaryrd}
+\usepackage{tikz}
+\usepackage{natbib}
+
+% % begin palatino.sty
+% % copied from palatino.sty, except left ttdefault to CMTT
+% \renewcommand{\rmdefault}{ppl}
+% \renewcommand{\sfdefault}{phv}
+% % \renewcommand{\ttdefault}{pcr}
+% % end palatino.sty
+
+% for twoside option
+% \addtolength{\oddsidemargin}{30pt}
+% \addtolength{\evensidemargin}{-22pt}
+
+\renewcommand{\sectionautorefname}{Section}
+
+% Some LaTeX setups already define theorem/proof environments.
+% Guard these so lecnotes can be reused safely.
+\makeatletter
+\@ifundefined{theorem}{\newtheorem{theorem}{Theorem}}{}
+
+\@ifundefined{c@conjecture}{%
+  \newaliascnt{conjecture}{theorem}
+  \newtheorem{conjecture}[conjecture]{Conjecture}
+  \aliascntresetthe{conjecture}
+  \providecommand*{\conjectureautorefname}{Conjecture}
+}{}
+
+\@ifundefined{c@lemma}{%
+  \newaliascnt{lemma}{theorem}
+  \newtheorem{lemma}[lemma]{Lemma}
+  \aliascntresetthe{lemma}
+  \providecommand*{\lemmaautorefname}{Lemma}
+}{}
+
+\@ifundefined{c@definition}{%
+  \newaliascnt{definition}{theorem}
+  \newtheorem{definition}[definition]{Definition}
+  \aliascntresetthe{definition}
+  \providecommand*{\definitionautorefname}{Definition}
+}{}
+
+\@ifundefined{c@corollary}{%
+  \newaliascnt{corollary}{theorem}
+  \newtheorem{corollary}[corollary]{Corollary}
+  \aliascntresetthe{corollary}
+  \providecommand*{\corollaryautorefname}{Corollary}
+}{}
+
+\@ifundefined{exercise}{\newtheorem{exercise}{Exercise}}{}
+\providecommand*{\exerciseautorefname}{Exercise}
+
+\@ifundefined{task}{\newtheorem{task}{Task}}{}
+\providecommand*{\taskautorefname}{Task}
+
+\@ifundefined{proof}{%
+  \newenvironment{proof}{\trivlist \item[\hskip \labelsep{\bf
+  Proof:}]}{\hfill$\Box$ \endtrivlist}
+}{}
+\@ifundefined{sketch}{%
+  \newenvironment{sketch}{\trivlist \item[\hskip \labelsep{\bf
+  Proof sketch:}]}{\hfill$\Box$ \endtrivlist}
+}{}
+\@ifundefined{attempt}{%
+  \newenvironment{attempt}{\trivlist \item[\hskip \labelsep{\bf
+  Proof attempt:}]}{\hfill$\Diamond$ \endtrivlist}
+}{}
+
+\@ifundefined{rules}{\newenvironment{rules}{\[\begin{array}{c}}{\end{array}\]}}{}
+
+\@ifundefined{highlight}{%
+  \newcommand{\highlight}[1]{\par\noindent%\vspace{1ex}%
+  \framebox{\addtolength{\linewidth}{-1em}\begin{minipage}{\linewidth}##1\end{minipage}}}
+}{}
+\makeatother
+
+% \newcommand{\highlight}[1]{\par%\vspace{1ex}%
+% \framebox{\addtolength{\linewidth}{-1em}\begin{minipage}{\linewidth}#1\end{minipage}}}
+% %\vspace{1ex}
+
+\title{Lecture Notes on \\ \lectitle}
+\author{\course \\ \lecturer}
+\date{Lecture \lecnum\\ \lecdate}
+
+\setlength{\headheight}{15pt}
+\pagestyle{fancyplain}
+
+\lhead[\fancyplain{}{\bfseries L\lecnum.\thepage}]%
+      {\fancyplain{}{\bfseries\lectitle}}
+\chead[]{}
+\rhead[\fancyplain{}{\bfseries\lectitle}]%
+      {\fancyplain{}{\bfseries L\lecnum.\thepage}}
+\lfoot[{\small\scshape Lecture Notes}]{{\small\scshape Lecture Notes}}
+\cfoot[]{}
+\rfoot[{\small\scshape\lecdate}]{{\small\scshape\lecdate}}

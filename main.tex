@@ -1,0 +1,377 @@
+% Digest notes template for CMU Software Foundations of Security & Privacy
+\documentclass[11pt]{article}
+
+% The lecture-note style (lecnotes.sty) expects these macros.
+\newcommand{\course}{15-316: Software Foundations of Security \& Privacy}
+\newcommand{\lecturer}{Frank Pfenning}
+\newcommand{\lecdate}{January 2026}
+\newcommand{\lecnum}{D}
+\newcommand{\lectitle}{Digest Notes}
+
+% Your name (shown on the title page)
+\newcommand{\studentname}{Mohamed Waiel Shikfa}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{lecnotes}
+\input{lmacros}
+
+% Override lecture-notes page style (no headers/footers)
+\pagestyle{empty}
+
+\usepackage{enumitem}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6\baselineskip}
+
+\newcommand{\kw}[1]{\textbf{#1}}
+\newcommand{\defn}[1]{\textbf{Definition.} #1}
+\newcommand{\thm}[1]{\textbf{Theorem (informal).} #1}
+\newcommand{\idea}[1]{\textbf{Key idea.} #1}
+\newcommand{\pitfall}[1]{\textbf{Common pitfall.} #1}
+\newcommand{\q}[1]{\textbf{Check yourself.} #1}
+
+\begin{document}
+
+\begin{titlepage}
+\thispagestyle{empty}
+\centering
+\vspace*{0.20\textheight}
+
+{\LARGE Software Foundations of Security \& Privacy\\[0.5em]}
+{\Huge \textbf{Digest Notes}\\[0.75em]}
+
+{\large \studentname\\[1.25em]}
+
+\begin{minipage}{0.85\linewidth}
+\small
+These notes are a condensed companion to the official course
+lecture notes. Each lecture is summarized as: a goal, one-page map, core definitions,
+key proof patterns/recipes, common pitfalls, and a short ``check yourself'' set.
+Full rule lists and semantic definitions are collected in the appendices and
+referenced from the relevant lecture.
+\end{minipage}
+
+\vfill
+{\small Last updated: \today}
+\end{titlepage}
+
+% \section*{How to use this}
+% \begin{itemize}[leftmargin=*]
+  % \item For each lecture/reading, write: (1) the goal, (2) 5--10 core definitions, (3) 2--4 key lemmas/theorems, (4) the proof pattern, (5) 3--5 pitfalls, (6) 5--10 ``check yourself'' questions.
+  % \item Prefer small ``recipes'' (how to apply a rule) over long prose.
+  % \item Keep each subsection terse; move details into a final ``Appendix: Details'' if needed.
+% \end{itemize}
+
+\clearpage
+\section*{Lecture 2 (Jan 11, 2026): Propositional Logic and Proof}
+\kw{Goal:} Use sequent calculus to (1) precisely define validity of formulas/sequents and (2) build/check formal derivations; understand soundness/completeness/decidability via invertibility + termination.
+
+\subsection*{One-page map}
+\begin{itemize}[leftmargin=*]
+  \item \kw{Objects:} propositional formulas $F$ built from variables and connectives; sequents $\Gamma \vdash \Delta$.
+  \item \kw{Semantics:} $\Gamma \vdash \Delta$ is valid iff ``all $\Gamma$ true implies some $\Delta$ true''.
+  \item \kw{Proof system:} right rules decompose goals; left rules decompose assumptions; identity closes branches.
+  \item \kw{Meta-properties:} soundness (derivable $\Rightarrow$ valid), completeness (valid $\Rightarrow$ derivable), decidability (procedure to decide validity).
+\end{itemize}
+
+\subsection*{Core definitions}
+\begin{itemize}[leftmargin=*]
+  \item \defn{\emph{Formula}: built from $p$ using $\land,\lor,\rightarrow,\lnot,\top,\bot$.}
+  \item \defn{\emph{Valid formula}: true under every truth assignment.}
+  \item \defn{\emph{Satisfiable formula}: true under some truth assignment.}
+  \item \defn{\emph{Sequent} $\Gamma \vdash \Delta$: assumptions $\Gamma$ and goals $\Delta$ (multi-succedent, disjunctive).}
+  \item \defn{\emph{Valid sequent}: if all formulas in $\Gamma$ are true then at least one formula in $\Delta$ is true.}
+  \item \defn{\emph{Derivation}: tree built bottom-up using inference rules; leaves typically close by identity.}
+\end{itemize}
+
+\subsection*{Key rules / theorems (high level)}
+\begin{itemize}[leftmargin=*]
+  \item \idea{Right/Left rules eliminate a top-level connective from a goal/assumption.}
+  \item \idea{Disjunction needs multi-succedent sequents for completeness.}
+  \item \thm{Soundness: if $\Gamma \vdash \Delta$ is derivable then it is valid.}
+  \item \thm{Completeness + decidability: all rules are invertible and reductive, so proof search terminates and succeeds iff sequent is valid.}
+\end{itemize}
+
+\subsection*{Proof-search recipe (sequent calculus)}
+\begin{itemize}[leftmargin=*]
+  \item \kw{Step 1:} Apply invertible rules bottom-up whenever possible (decompose connectives).
+  \item \kw{Step 2:} Stop at variable-only leaves $p_1,\dots,p_n \vdash q_1,\dots,q_m$.
+  \item \kw{Step 3:} Leaf closes iff some $p_i = q_j$ (identity). Otherwise it is a countermodel seed.
+\end{itemize}
+
+\subsection*{Pitfalls}
+\begin{itemize}[leftmargin=*]
+  \item \pitfall{Confusing formula implication $F \rightarrow G$ with sequent entailment $F \vdash G$: they coincide in validity but are different syntactic objects.}
+  \item \pitfall{Using a two-rule disjunction right-introduction ($\lor R_1/\lor R_2$) breaks completeness for classical truth-table validity. In general, avoid applying more than one rule at a time.}
+\end{itemize}
+
+\subsection*{Check yourself}
+\begin{enumerate}[leftmargin=*]
+  \item \q{Prove $p \lor (p \rightarrow q)$ is valid using sequent calculus.}
+  \item \q{Given a failed leaf $p,q \vdash r$, what truth assignment witnesses invalidity?}
+\end{enumerate}
+
+\kw{Reference:} Full propositional sequent-calculus rules are in Appendix~\ref{app:prop-sequent}.
+
+\clearpage
+\section*{Lecture 3 (Jan 13, 2026): Dynamic Logic}
+\kw{Goal:} Extend sequent reasoning to talk about programs; express safety-style properties as postconditions; derive rules for program constructs (if/assignment/sequence/while).
+
+\subsection*{One-page map}
+\begin{itemize}[leftmargin=*]
+  \item \kw{New syntax:} programs $\alpha$ (assign/seq/if/while) and modalities $[\alpha]Q$ (box) and $\langle\alpha\rangle Q$ (diamond).
+  \item \kw{Intuition:} $[\alpha]Q$ means ``every terminating run of $\alpha$ ends in a state satisfying $Q$''.
+  \item \kw{Theme:} Rules should reduce properties of compound programs to properties of smaller programs.
+\end{itemize}
+
+\subsection*{Core definitions}
+\begin{itemize}[leftmargin=*]
+  \item \defn{\emph{Trace}: (possibly infinite) sequence of states/events during execution.}
+  \item \defn{\emph{Safety property}: ``nothing bad happens'' (prefix-closed).}
+  \item \defn{\emph{Liveness property}: ``something good eventually happens''.}
+  \item \defn{\emph{Box/diamond}: $[\alpha]Q$ (all terminating runs end in $Q$) and $\langle\alpha\rangle Q$ (some terminating run ends in $Q$). Since our language has no nondeterminism, $\langle\alpha\rangle Q$ is equivalent to ``$\alpha$ terminates and $[\alpha]Q$''.}
+\end{itemize}
+
+\subsection*{Key rules (as ``recipes'')}
+\begin{itemize}[leftmargin=*]
+  \item \idea{\kw{If:} split on the guard.}
+  \item \idea{\kw{Sequential Composition:} rewrite $[\alpha;\beta]Q$ as $[\alpha]([\beta]Q)$.}
+  \item \idea{\kw{Assignment:} do \emph{not} assume $x=e$ with the same $x$ on both sides of the state change; introduce fresh $x'$ (post-state value) and substitute.}
+  \item \idea{\kw{While:} unfolding is sound but not reductive; loop invariants are the scalable rule.}
+\end{itemize}
+
+\subsection*{Assignment gotcha (why freshness matters)}
+\begin{itemize}[leftmargin=*]
+  \item \pitfall{The tempting rule ``assume $x=e$ after $x := e$'' is \emph{unsound} because it confuses the value of $x$ \emph{before} and \emph{after} the assignment.}
+  \item \kw{Lecture example:} with the unsound rule you could (wrongly) justify
+    $x = 2 \vdash [x := 1]\, x = 3$ by reducing it to the premise
+    $x = 2, x = 1 \vdash x = 3$, which is valid only because the antecedents are contradictory.
+  \item \idea{Fix (as in the notes): introduce a fresh post-state variable $x'$ and replace the postcondition $Q(x)$ with $Q(x')$. Rule shape:}
+    \\[0.25em]
+    $\Gamma \vdash [x := e]Q(x), \Delta$ reduces to $\Gamma, x' = e \vdash Q(x'), \Delta$ (with $x'$ fresh).
+\end{itemize}
+
+\subsection*{Loop-invariant recipe}
+\begin{itemize}[leftmargin=*]
+  \item \kw{Pick an invariant $J$ and prove these sequents (turnstile, not implication):}
+    \begin{itemize}[leftmargin=*]
+      \item \kw{Init:} $\Gamma \vdash J$
+      \item \kw{Preserved:} $J, P \vdash [\alpha]J$
+      \item \kw{Post:} $J, \lnot P \vdash Q$
+    \end{itemize}
+  \item \kw{Important:} $\Gamma$ (facts true only initially) is intentionally dropped from the preserved/post obligations.
+\end{itemize}
+
+\subsection*{Check yourself}
+\begin{enumerate}[leftmargin=*]
+  \item \q{Explain why $[\alpha]Q$ is vacuously true when $\alpha$ does not terminate. What property is this capturing?}
+  \item \q{For the swap program (using + and -), what must the precondition include to avoid undefined behavior in bounded-integer languages?}
+\end{enumerate}
+
+\kw{Reference:} Full dynamic-logic rule summary is in Appendix~\ref{app:dl-rules}.
+
+\clearpage
+\section*{Lecture 4 (Jan 20, 2026): Semantics of Programs}
+\kw{Goal:} Pin down the meaning of expressions, programs, and formulas so rule soundness proofs become ``expand definitions and chase the quantifiers''.
+
+\subsection*{One-page map}
+\begin{itemize}[leftmargin=*]
+  \item \kw{State:} $\omega(x)$ is the value of variable $x$.
+  \item \kw{Expression meaning:} $\omega \lbb e\rbb \in \mathbb{Z}$.
+  \item \kw{Program meaning:} relation $\omega \lbb\alpha\rbb \nu$ between pre/post states.
+  \item \kw{Formula meaning:} $\omega \models P$.
+  \item \kw{Reusable move:} prove equivalences (e.g. $[\alpha;\beta]Q \leftrightarrow [\alpha]([\beta]Q)$) and use them as rewrite rules.
+\end{itemize}
+
+\subsection*{Core clauses (keep only the high-yield ones)}
+\begin{itemize}[leftmargin=*]
+  \item \defn{Assignment updates state: $\nu = \omega[x \mapsto \omega\llbracket e\rrbracket]$.}
+  \item \defn{Sequence composes via an intermediate state: $\exists\mu$.}
+  \item \defn{While termination is ``there exists an $n$ iterations'' (bounded-iteration semantics).}
+\end{itemize}
+
+\subsection*{Reusable proof pattern: ``unwind definitions''}
+\begin{itemize}[leftmargin=*]
+  \item \kw{To show} $P \leftrightarrow Q$ is valid: fix an arbitrary state $\omega$, assume $\omega \models P$, expand definitions until you can derive $\omega \models Q$ (and vice versa).
+  \item \idea{This justifies using valid equivalences as both left- and right-rules (sound + invertible).}
+\end{itemize}
+
+\subsection*{Pitfalls}
+\begin{itemize}[leftmargin=*]
+  \item \pitfall{Quantification over program states is subtle: naive ``substitute a constant for $x$'' can fail when $x$ is read across many loop states; semantics uses state update $\omega[x\mapsto c]$.}
+\end{itemize}
+
+\subsection*{Check yourself}
+\begin{enumerate}[leftmargin=*]
+  \item \q{Prove (informally, by definitions) $\models [\alpha;\beta]Q \leftrightarrow [\alpha]([\beta]Q)$.}
+  \item \q{Give a simple program $\alpha$ and postcondition $Q$ where $\omega \models [\alpha]Q$ holds because $\alpha$ does not terminate.}
+\end{enumerate}
+
+\kw{Reference:} Full semantics (expressions, programs, formulas) are summarized in Appendix~\ref{app:semantics}.
+
+\clearpage
+\section*{Appendices}
+\noindent\rule{\linewidth}{0.6pt}
+
+\appendix
+\section{Propositional sequent calculus (full rule list)}
+\label{app:prop-sequent}
+\kw{Sequents:} $\Gamma \vdash \Delta$ where $\Gamma,\Delta$ are (multi)sets of formulas.
+\kw{Validity:} all $\Gamma$ true implies some $\Delta$ true.
+
+\subsection*{Identity}
+\begin{rules}
+  \infer[\ms{id}]
+  {\Gamma, F \vdash F, \Delta}
+  {}
+\end{rules}
+
+\subsection*{Logical connectives}
+
+% Compact, aligned grid (Name | Right rule | Left rule)
+\begingroup
+\setlength{\inferLineSkip}{2pt}
+\[
+  \begin{array}{l@{\hspace{1.5em}}c@{\hspace{3em}}c}
+    \textbf{True}
+    & \infer[{\top}R]{\Gamma \vdash \top, \Delta}{}
+    & \infer[{\top}L]{\Gamma, \top \vdash \Delta}{\Gamma \vdash \Delta}
+    \\[0.75em]
+
+    \textbf{False}
+    & \infer[{\bot}R]{\Gamma \vdash \bot, \Delta}{\Gamma \vdash \Delta}
+    & \infer[{\bot}L]{\Gamma, \bot \vdash \Delta}{}
+    \\[1.0em]
+
+    \textbf{Negation}
+    & \infer[{\lnot}R]{\Gamma \vdash \lnot F, \Delta}{\Gamma, F \vdash \Delta}
+    & \infer[{\lnot}L]{\Gamma, \lnot F \vdash \Delta}{\Gamma \vdash F, \Delta}
+    \\[1.0em]
+
+    \textbf{Conjunction}
+    & \infer[{\land}R]{\Gamma \vdash F \land G, \Delta}{\Gamma \vdash F, \Delta & \Gamma \vdash G, \Delta}
+    & \infer[{\land}L]{\Gamma, F \land G \vdash \Delta}{\Gamma, F, G \vdash \Delta}
+    \\[1.0em]
+
+    \textbf{Disjunction}
+    & \infer[{\lor}R]{\Gamma \vdash F \lor G, \Delta}{\Gamma \vdash F, G, \Delta}
+    & \infer[{\lor}L]{\Gamma, F \lor G \vdash \Delta}{\Gamma, F \vdash \Delta & \Gamma, G \vdash \Delta}
+    \\[1.0em]
+
+    \textbf{Implication}
+    & \infer[{\arrow}R]{\Gamma \vdash F \arrow G, \Delta}{\Gamma, F \vdash G, \Delta}
+    & \infer[{\arrow}L]{\Gamma, F \arrow G \vdash \Delta}{\Gamma \vdash F, \Delta & \Gamma, G \vdash \Delta}
+    \\[1.0em]
+
+    \textbf{NOR ($\downarrow$)}
+    & \infer[{\downarrow}R]{\Gamma \vdash F \downarrow G, \Delta}{\Gamma, F \vdash \Delta & \Gamma, G \vdash \Delta}
+    & \infer[{\downarrow}L]{\Gamma, F \downarrow G \vdash \Delta}{\Gamma \vdash F, G, \Delta}
+  \end{array}
+\]
+\endgroup
+
+\section{Dynamic logic: Language summary}
+\vspace{-1\baselineskip}
+\[
+  \begin{array}{llcl}
+    \mbox{Variables} & x, y, z \\
+    \mbox{Constants} & c & ::= & \ldots, -1, 0, 1, \ldots \\
+    \mbox{Expressions} & e & ::= & c \mid x \mid e_1 + e_2 \mid e_1 * e_2 \mid \ldots \\
+    \mbox{Programs} & \alpha, \beta & ::= & x := e \mid \alpha \semi \beta
+                                            \mid \mb{if}\; P\; \mb{then}\; \alpha\; \mb{else}\; \beta
+                                            \mid \mb{while}\; P\; \alpha \\
+    \mbox{Formulas} & P, Q & ::= & e_1 \leq e_2 \mid e_1 = e_2 \mid \ldots \\
+                     & & \mid  & P \land Q \mid P \lor Q \mid P \arrow Q \mid P \leftrightarrow Q \mid
+                                 \lnot P \mid \top \mid \bot \\
+                     & & \mid & [\alpha]Q \mid \langle \alpha\rangle Q
+  \end{array}
+\]
+
+
+\section{Dynamic logic: rule summary (box modality)}
+\label{app:dl-rules}
+\kw{Reading:} $[\alpha]Q$ is partial correctness (all \emph{terminating} runs end in $Q$).
+
+\begin{rules}
+  \infer[{[\mb{if}]}R]
+  {\Gamma \vdash [\mb{if}\; P\; \mb{then}\; \alpha\; \mb{else}\; \beta]Q, \Delta}
+  {\Gamma, P \vdash [\alpha]Q, \Delta
+    & \Gamma, \lnot P \vdash [\beta]Q, \Delta}
+
+  \\[1em]
+  \infer[{[\mb{:=}]}R^{x'}]
+  {\Gamma \vdash [x := e]Q(x), \Delta}
+  {\Gamma, x' = e \vdash Q(x'), \Delta}
+
+  \\[1em]
+  \infer[{[\semi]}R]
+  {\Gamma \vdash [\alpha \semi \beta]Q, \Delta}
+  {\Gamma \vdash [\alpha]([\beta]Q), \Delta}
+
+  \\[1em]
+  \infer[{[\mb{unfold}]}R]
+  {\Gamma \vdash [\mb{while}\; P\; \alpha]Q, \Delta}
+  {\Gamma, P \vdash [\alpha]([\mb{while}\; P\; \alpha]Q), \Delta
+    & \Gamma, \lnot P \vdash Q, \Delta}
+
+  \\[1em]
+  \infer[{[\mb{while}]}R]
+  {\Gamma \vdash [\mb{while}_J\; P\; \alpha]Q, \Delta}
+  {\Gamma \vdash J, \Delta
+    & J, P \vdash [\alpha]J
+    & J, \lnot P \vdash Q}
+\end{rules}
+
+\section{Semantics cheat sheet}
+\label{app:semantics}
+\kw{States:} total maps $\omega : \{x,y,\dots\} \to \mathbb{Z}$.
+
+\paragraph{Expressions}
+\[
+  \omega \lbb c\rbb = c
+  \qquad
+  \omega \lbb x\rbb = \omega(x)
+  \qquad
+  \omega \lbb e_1 + e_2\rbb = \omega \lbb e_1\rbb + \omega \lbb e_2\rbb
+\]
+(and similarly for other operators).
+
+\paragraph{State update}
+\[
+  (\omega[x \mapsto c])(x)=c
+  \qquad
+  (\omega[x \mapsto c])(y)=\omega(y)\ \mbox{for } y\neq x
+\]
+
+\paragraph{Programs as relations}
+Write $\omega \lbb \alpha\rbb \nu$ for ``executing $\alpha$ can take prestate $\omega$ to poststate $\nu$''.
+\[
+  \omega \lbb x := e\rbb \nu \ \mbox{iff}\ \nu = \omega[x \mapsto \omega \lbb e\rbb]
+\]
+\[
+  \omega \lbb \alpha \semi \beta\rbb \nu \ \mbox{iff}\ \exists\mu.\ \omega \lbb\alpha\rbb \mu \land \mu \lbb\beta\rbb \nu
+\]
+\[
+  \omega \lbb \mb{if}\; P\; \mb{then}\; \alpha\; \mb{else}\; \beta\rbb \nu
+  \ \mbox{iff}\
+  (\omega\models P \land \omega \lbb\alpha\rbb \nu)\ \mbox{or}\ (\omega\not\models P \land \omega \lbb\beta\rbb \nu)
+\]
+\[
+  \omega \lbb \mb{while}\; P\; \alpha\rbb \nu \ \mbox{iff}\ \omega \lbb \mb{while}\; P\; \alpha\rbb^n\nu\ \mbox{for some } n\in\mathbb{N}
+\]
+with the bounded-iteration clauses:
+\[
+  \omega \lbb \mb{while}\; P\; \alpha\rbb^{0}\nu \ \mbox{iff}\ (\omega\not\models P \land \omega=\nu)
+\]
+\[
+  \omega \lbb \mb{while}\; P\; \alpha\rbb^{n+1}\nu \ \mbox{iff}\ (\omega\models P \land \exists\mu.\ \omega \lbb\alpha\rbb \mu \land \mu \lbb \mb{while}\; P\; \alpha\rbb^{n}\nu)
+\]
+
+\paragraph{Formulas}
+\[
+  \omega\models [\alpha]Q \ \mbox{iff}\ \forall\nu.\ (\omega \lbb\alpha\rbb \nu \Rightarrow \nu\models Q)
+  \qquad
+  \omega\models \langle\alpha\rangle Q \ \mbox{iff}\ \exists\nu.\ (\omega \lbb\alpha\rbb \nu \land \nu\models Q)
+\]
+
+\end{document}

@@ -210,10 +210,134 @@ referenced from the relevant lecture.
 \kw{Reference:} Full semantics (expressions, programs, formulas) are summarized in Appendix~\ref{app:semantics}.
 
 \clearpage
+\section*{Lecture 5 (Jan 25, 2026): Proving Safety}
+\kw{Goal:} Extend dynamic logic to account for \emph{unsafe} execution (undefined-behavior-style), and learn proof patterns for showing programs avoid unsafe commands (often via invariants/guards).
+
+\subsection*{One-page map}
+\begin{itemize}[leftmargin=*]
+  \item \kw{Three outcomes of running a program:} (i) a post-state $\nu$, (ii) no post-state because it \emph{diverges}, or (iii) no post-state because it goes \emph{unsafe}.
+  \item \kw{Semantic hook:} introduce the unsafe judgment $\omega \lbb \alpha\rbb \lightning$.
+  \item \kw{Safety as a DL formula:} to show $\alpha$ is safe under precondition $P$, prove $P \arrow [\alpha]\top$.
+  \item \kw{Engineering move:} \emph{sandboxing} = instrument unsafe commands with guards so the result is provably safe.
+\end{itemize}
+
+\subsection*{Core definitions}
+\begin{itemize}[leftmargin=*]
+  \item \defn{\emph{Unsafe execution}: $\omega \lbb \alpha\rbb \lightning$ means executing $\alpha$ starting in state $\omega$ performs an unsafe operation.}
+  \item \defn{\emph{Safe program (at $\omega$)}: not unsafe, i.e. \textbf{not} $\omega \lbb \alpha\rbb \lightning$ (it may still diverge).}
+  \item \defn{\emph{Indeterminate behavior}: execution is safe, but some expression results are unspecified; we keep expressions safe and push “badness” into commands.}
+  \item \defn{\emph{Updated box semantics (partial correctness + safety)}:}
+    \[
+      \omega \models [\alpha]Q
+      \ \mbox{iff}\
+      \Big(\forall\nu.\; (\omega \lbb\alpha\rbb \nu \Rightarrow \nu\models Q)\Big)
+      \ \land\
+      \textbf{not}\ (\omega \lbb \alpha\rbb \lightning).
+    \]
+\end{itemize}
+
+\subsection*{Key rules / recipes}
+\begin{itemize}[leftmargin=*]
+  \item \idea{To prove safety: aim for $P \arrow [\alpha]\top$ and then rely on rules that force you to prove the operation-specific safety condition.}
+  \item \idea{Unsafe command example (division-as-command): $x := \mb{divide}\; e_1\; e_2$ is unsafe when $e_2$ evaluates to $0$.}
+  \item \idea{Sequent rule shape for unsafe commands: one premise proves the safety side-condition, another carries the (possibly indeterminate) result into a fresh post-state variable.}
+\end{itemize}
+
+\subsection*{Two “control” commands: \texttt{assert} vs \texttt{test}}
+\begin{itemize}[leftmargin=*]
+  \item \kw{Assertion:} $\mb{assert}\; P$ is unsafe when $P$ is false (like “crash = unsafe”).
+    \\[0.25em]
+    \idea{Axiom: $[\mb{assert}\; P]Q \leftrightarrow (P \land Q)$.}
+  \item \kw{Guard/test:} $\mb{test}\; P$ aborts safely when $P$ is false (no poststate, but \emph{not} unsafe).
+    \\[0.25em]
+    \idea{Axiom: $[\mb{test}\; P]Q \leftrightarrow (P \arrow Q)$.}
+\end{itemize}
+
+\subsection*{Sandboxing recipe}
+\begin{itemize}[leftmargin=*]
+  \item \kw{Transform:} before any potentially unsafe command $c$, insert a guard $\mb{test}\; \ms{Safe}(c)$.
+  \item \idea{Why it works:} after $\mb{test}\; \ms{Safe}(c)$, you can use the guard postcondition to discharge the safety premise required by the unsafe-command rule.
+\end{itemize}
+
+\subsection*{Pitfalls}
+\begin{itemize}[leftmargin=*]
+  \item \pitfall{Nontermination is \emph{not} the same as unsafe: $[\alpha]Q$ can still hold vacuously when $\alpha$ diverges, but it must be false if $\alpha$ is unsafe.}
+  \item \pitfall{Mixing up $\mb{assert}\; P$ and $\mb{test}\; P$: the former is unsafe on failure; the latter aborts safely on failure.}
+\end{itemize}
+
+\subsection*{Check yourself}
+\begin{enumerate}[leftmargin=*]
+  \item \q{Why is $[\mb{test}\; \bot]Q$ valid for every $Q$ under the updated box semantics?}
+  \item \q{What formula do you prove to show “division by $e_2$ is safe” inside a proof of $P \arrow [\alpha]\top$?}
+\end{enumerate}
+
+\clearpage
+\section*{Lecture 6 (Jan 27, 2026): Memory Safety}
+\kw{Goal:} Add a (bounded) memory model, define unsafe out-of-bounds reads/writes, and learn proof patterns for memory safety (often invariants with bounds + optional sandboxing via guards).
+
+\subsection*{One-page map}
+\begin{itemize}[leftmargin=*]
+  \item \kw{Memory model:} a distinguished variable $M$ denotes a heap/array $H : \mathbb{Z}\to\mathbb{Z}$.
+  \item \kw{Bounded addresses:} legal indices satisfy $0 \le i < \ms{U}$; out-of-bounds access is unsafe.
+  \item \kw{New commands:} read $x := M[e]$ and write $M[e_1] := e_2$ (unsafe if the index is out of bounds).
+  \item \kw{Reasoning support:} use theory-of-arrays style terms $\mb{read}\; M\; e$ and $\mb{write}\; M\; e_1\; e_2$ in \emph{formulas} (expressions remain safe but may be indeterminate).
+\end{itemize}
+
+\subsection*{Core definitions}
+\begin{itemize}[leftmargin=*]
+  \item \defn{\emph{Safe read}: $x := M[e]$ is safe iff $0 \le e < \ms{U}$.}
+  \item \defn{\emph{Safe write}: $M[e_1] := e_2$ is safe iff $0 \le e_1 < \ms{U}$.}
+  \item \defn{\emph{State shape}: lowercase variables map to integers; uppercase variables like $M$ map to heaps/arrays.}
+\end{itemize}
+
+\subsection*{Key rules (as recipes)}
+\begin{itemize}[leftmargin=*]
+  \item \idea{Read rule forces a bounds proof \emph{and} introduces a fresh post-state variable:}
+    \\[0.25em]
+    $\Gamma \vdash [x := M[e]]Q(x),\Delta$ reduces to
+    $\Gamma \vdash 0 \le e < \ms{U},\Delta$ and $\Gamma, x' = \mb{read}\; M\; e \vdash Q(x'),\Delta$.
+  \item \idea{Write is analogous with fresh $M'$:}
+    \\[0.25em]
+    $\Gamma \vdash [M[e_1] := e_2]Q(M),\Delta$ reduces to
+    $\Gamma \vdash 0 \le e_1 < \ms{U},\Delta$ and $\Gamma, M' = \mb{write}\; M\; e_1\; e_2 \vdash Q(M'),\Delta$.
+  \item \idea{Invariant pattern: to keep writes safe in loops, invariants usually need both a lower bound and the global $\ms{U}$ bound (e.g. $0 \le i \le n < \ms{U}$).}
+\end{itemize}
+
+\subsection*{Tiny example (invariant needs bounds)}
+\begin{itemize}[leftmargin=*]
+  \item \kw{Program:} $i := 0;\;\mb{while}\ (i<n)\ \{M[i]:=i;\; i:=i+1\}$.
+  \item \idea{To prove $0 \le n < \ms{U} \arrow [\cdots]\top$, a good invariant is $0 \le i \le n < \ms{U}$ (not just $i\le n$).}
+\end{itemize}
+
+\subsection*{Sandboxing memory access}
+\begin{itemize}[leftmargin=*]
+  \item \idea{Instrument reads/writes:}
+    \begin{itemize}[leftmargin=*]
+      \item replace $x := M[e]$ by $\mb{test}\; 0 \le e < \ms{U} \semi x := M[e]$;
+      \item replace $M[e_1] := e_2$ by $\mb{test}\; 0 \le e_1 < \ms{U} \semi M[e_1] := e_2$.
+    \end{itemize}
+  \item \idea{Result:} the sandboxed program is provably safe (often with invariant $\top$), but may abort.
+\end{itemize}
+
+\subsection*{Pitfalls}
+\begin{itemize}[leftmargin=*]
+  \item \pitfall{For loop preservation, you drop the initial-context assumptions $\Gamma$; invariants must carry the needed bounds themselves.}
+  \item \pitfall{After a write you must reason about the new heap $M'$ (freshness), not the old $M$.}
+\end{itemize}
+
+\subsection*{Check yourself}
+\begin{enumerate}[leftmargin=*]
+  \item \q{Why does the invariant $i\le n$ fail to prove safety for $M[i] := i$ inside the loop body? Name the missing facts.}
+  \item \q{Write the sandboxed version of $x := M[y+1]$ and explain (briefly) what property it guarantees.}
+\end{enumerate}
+
+\clearpage
 \section*{Appendices}
 \noindent\rule{\linewidth}{0.6pt}
 
 \appendix
+
+
 \section{Propositional sequent calculus (full rule list)}
 \label{app:prop-sequent}
 \kw{Sequents:} $\Gamma \vdash \Delta$ where $\Gamma,\Delta$ are (multi)sets of formulas.
@@ -230,38 +354,38 @@ referenced from the relevant lecture.
 
 % Compact, aligned grid (Name | Right rule | Left rule)
 \begingroup
-\setlength{\inferLineSkip}{2pt}
+\setlength{\inferLineSkip}{1pt}
 \[
-  \begin{array}{l@{\hspace{1.5em}}c@{\hspace{3em}}c}
+  \begin{array}{l@{\hspace{1.2em}}c@{\hspace{2.2em}}c}
     \textbf{True}
     & \infer[{\top}R]{\Gamma \vdash \top, \Delta}{}
     & \infer[{\top}L]{\Gamma, \top \vdash \Delta}{\Gamma \vdash \Delta}
-    \\[0.75em]
+    \\[0.35em]
 
     \textbf{False}
     & \infer[{\bot}R]{\Gamma \vdash \bot, \Delta}{\Gamma \vdash \Delta}
     & \infer[{\bot}L]{\Gamma, \bot \vdash \Delta}{}
-    \\[1.0em]
+    \\[0.55em]
 
     \textbf{Negation}
     & \infer[{\lnot}R]{\Gamma \vdash \lnot F, \Delta}{\Gamma, F \vdash \Delta}
     & \infer[{\lnot}L]{\Gamma, \lnot F \vdash \Delta}{\Gamma \vdash F, \Delta}
-    \\[1.0em]
+    \\[0.55em]
 
     \textbf{Conjunction}
     & \infer[{\land}R]{\Gamma \vdash F \land G, \Delta}{\Gamma \vdash F, \Delta & \Gamma \vdash G, \Delta}
     & \infer[{\land}L]{\Gamma, F \land G \vdash \Delta}{\Gamma, F, G \vdash \Delta}
-    \\[1.0em]
+    \\[0.55em]
 
     \textbf{Disjunction}
     & \infer[{\lor}R]{\Gamma \vdash F \lor G, \Delta}{\Gamma \vdash F, G, \Delta}
     & \infer[{\lor}L]{\Gamma, F \lor G \vdash \Delta}{\Gamma, F \vdash \Delta & \Gamma, G \vdash \Delta}
-    \\[1.0em]
+    \\[0.55em]
 
     \textbf{Implication}
     & \infer[{\arrow}R]{\Gamma \vdash F \arrow G, \Delta}{\Gamma, F \vdash G, \Delta}
     & \infer[{\arrow}L]{\Gamma, F \arrow G \vdash \Delta}{\Gamma \vdash F, \Delta & \Gamma, G \vdash \Delta}
-    \\[1.0em]
+    \\[0.55em]
 
     \textbf{NOR ($\downarrow$)}
     & \infer[{\downarrow}R]{\Gamma \vdash F \downarrow G, \Delta}{\Gamma, F \vdash \Delta & \Gamma, G \vdash \Delta}
@@ -270,24 +394,27 @@ referenced from the relevant lecture.
 \]
 \endgroup
 
-\section{Dynamic logic: Language summary}
+\section{Dynamic logic: Language summary (incl.~safety + memory)}
 \label{app:dl-language}
 \vspace{-1\baselineskip}
 \[
   \begin{array}{llcl}
-    \mbox{Variables} & x, y, z \\
+    \mbox{Int vars} & x, y, z \\
+    \mbox{Memory var} & M \\
     \mbox{Constants} & c & ::= & \ldots, -1, 0, 1, \ldots \\
-    \mbox{Expressions} & e & ::= & c \mid x \mid e_1 + e_2 \mid e_1 * e_2 \mid \ldots \\
-    \mbox{Programs} & \alpha, \beta & ::= & x := e \mid \alpha \semi \beta
+    \mbox{Expressions} & e & ::= & c \mid x \mid e_1 + e_2 \mid e_1 * e_2 \mid e_1 - e_2 \mid \ldots \\
+                     & & \mid  & e_1 / e_2 \mid \mb{read}\; M\; e \mid \mb{write}\; M\; e_1\; e_2 \\
+    \mbox{Programs} & \alpha, \beta & ::= & x := e \mid \mb{skip} \mid \alpha \semi \beta
                                             \mid \mb{if}\; P\; \mb{then}\; \alpha\; \mb{else}\; \beta
                                             \mid \mb{while}\; P\; \alpha \\
-    \mbox{Formulas} & P, Q & ::= & e_1 \leq e_2 \mid e_1 = e_2 \mid \ldots \\
-                     & & \mid  & P \land Q \mid P \lor Q \mid P \arrow Q \mid P \leftrightarrow Q \mid
-                                 \lnot P \mid \top \mid \bot \\
+                     & & \mid & \mb{test}\; P \mid \mb{assert}\; P \\
+                     & & \mid & x := \mb{divide}\; e_1\; e_2 \\
+                     & & \mid & x := M[e] \mid M[e_1] := e_2 \\
+    \mbox{Formulas} & P, Q & ::= & e_1 \leq e_2 \mid e_1 = e_2 \mid \top \mid \bot \\
+                     & & \mid  & P \land Q \mid P \lor Q \mid P \arrow Q \mid P \leftrightarrow Q \mid \lnot P \\
                      & & \mid & [\alpha]Q \mid \langle \alpha\rangle Q
   \end{array}
 \]
-
 
 \section{Dynamic logic: rule summary (box modality)}
 \label{app:dl-rules}
@@ -323,9 +450,24 @@ referenced from the relevant lecture.
     & J, \lnot P \vdash Q}
 \end{rules}
 
+\begingroup
+\setlength{\parskip}{0.2\baselineskip}
+\setlength{\abovedisplayskip}{2pt}
+\setlength{\belowdisplayskip}{2pt}
+\setlength{\abovedisplayshortskip}{1pt}
+\setlength{\belowdisplayshortskip}{1pt}
+\setlength{\inferLineSkip}{1pt}
+\renewcommand{\arraystretch}{0.52}
+
 \section{Semantics cheat sheet}
 \label{app:semantics}
-\kw{States:} total maps $\omega : \{x,y,\dots\} \to \mathbb{Z}$.
+\kw{States:} total maps $\omega$ that map int variables to $\mathbb{Z}$ and memory variables (like $M$) to heaps $H : \mathbb{Z}\to\mathbb{Z}$.
+
+\paragraph{Unsafe execution}
+\[
+  \omega \lbb \alpha\rbb \lightning
+\]
+means executing $\alpha$ from $\omega$ performs an unsafe operation (so it has no poststate).
 
 \paragraph{Expressions}
 \[
@@ -370,9 +512,14 @@ with the bounded-iteration clauses:
 
 \paragraph{Formulas}
 \[
-  \omega\models [\alpha]Q \ \mbox{iff}\ \forall\nu.\ (\omega \lbb\alpha\rbb \nu \Rightarrow \nu\models Q)
-  \qquad
+  \omega\models [\alpha]Q
+  \ \mbox{iff}\
+  \Big(\forall\nu.\ (\omega \lbb\alpha\rbb \nu \Rightarrow \nu\models Q)\Big)
+  \ \land\ \textbf{not}\ (\omega \lbb \alpha\rbb \lightning)
+\]
+\[
   \omega\models \langle\alpha\rangle Q \ \mbox{iff}\ \exists\nu.\ (\omega \lbb\alpha\rbb \nu \land \nu\models Q)
 \]
 
+\endgroup
 \end{document}

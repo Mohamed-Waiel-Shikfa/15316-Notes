@@ -332,6 +332,120 @@ referenced from the relevant lecture.
 \end{enumerate}
 
 \clearpage
+\section*{Lecture 7 (Feb 1, 2026): Generating Verification Conditions}
+\kw{Goal:} Compute a weakest liberal precondition (WLP) function $\ms{wlp}\;\alpha\;Q$ so that proving $P \arrow [\alpha]Q$ reduces to proving a \emph{pure arithmetic} formula $P \arrow \ms{wlp}\;\alpha\;Q$ (verification condition generation).
+
+\subsection*{One-page map}
+\begin{itemize}[leftmargin=*]
+  \item \kw{Problem:} DL formulas mix programs and logic; arithmetic provers only handle \emph{pure} formulas.
+  \item \kw{Solution:} translate $[\alpha]Q$ into a pure formula $\ms{wlp}\;\alpha\;Q$.
+  \item \kw{VCG pipeline:} show validity of $P \arrow \ms{wlp}\;\alpha\;Q$ using an arithmetic solver.
+  \item \kw{Loops:} true WLP needs invariants; compute WLP \emph{relative to} supplied loop invariants.
+\end{itemize}
+
+\subsection*{Core definitions}
+\begin{itemize}[leftmargin=*]
+  \item \defn{\emph{Sufficient precondition}: $P$ is sufficient for $\alpha,Q$ if $P \arrow [\alpha]Q$ is valid.}
+  \item \defn{\emph{Weakest liberal precondition}: $\ms{wlp}\;\alpha\;Q$ is a pure $P$ such that (1) $P \arrow [\alpha]Q$ and (2) any other sufficient $P'$ implies $P$.}
+  \item \defn{\emph{Verification condition}: $P \arrow \ms{wlp}\;\alpha\;Q$ (pure).}
+\end{itemize}
+
+\subsection*{WLP recipes (loop-free, high level)}
+\begin{itemize}[leftmargin=*]
+  \item \idea{\kw{Sequence:} $\ms{wlp}\;(\alpha \semi \beta)\;Q \;=\; \ms{wlp}\;\alpha\;(\ms{wlp}\;\beta\;Q)$ (work right-to-left).}
+  \item \idea{\kw{Assignment:} for pure $Q(x)$, WLP is substitution: $\ms{wlp}\;(x:=e)\;Q(x)=Q(e)$.}
+  \item \idea{\kw{If:} split by the guard: WLP becomes a conjunction of implications (``both branches correct under their path condition'').}
+\end{itemize}
+
+\subsection*{Loops (invariant-based)}
+\begin{itemize}[leftmargin=*]
+  \item \idea{To handle $\mb{while}\;P\;\alpha$, require an invariant $J$ and generate obligations: init ($P_0 \arrow J$), preservation ($J \land P \arrow [\alpha]J$), and post ($J \land \lnot P \arrow Q$).}
+  \item \pitfall{If you forget needed facts in $J$, preservation fails because the initial-context assumptions are not available inside the loop.}
+\end{itemize}
+
+\subsection*{Check yourself}
+\begin{enumerate}[leftmargin=*]
+  \item \q{Why must $\ms{wlp}\;\alpha\;Q$ be a \emph{pure} formula to be useful for automation?}
+  \item \q{Compute $\ms{wlp}\;(x:=x+1)\;(x \ge 0)$.}
+\end{enumerate}
+
+\clearpage
+\section*{Lecture 8 (Feb 3, 2026): Symbolic Evaluation}
+\kw{Goal:} Model program reasoning via control-flow graphs and \emph{path formulas}; detect potential assertion/safety violations by checking satisfiability of path conditions.
+
+\subsection*{One-page map}
+\begin{itemize}[leftmargin=*]
+  \item \kw{CFG view:} nodes are program points; edges are possible transitions annotated with ``information gained''.
+  \item \kw{Paths:} each path corresponds to one branch of symbolic execution / proof search.
+  \item \kw{Path formula:} conjunction of branch conditions plus equalities from assignments (often via fresh primed variables).
+  \item \kw{Bug finding:} characterize paths leading to an unsafe state (e.g. assertion failure) and ask if their path formulas are satisfiable.
+\end{itemize}
+
+\subsection*{Core definitions}
+\begin{itemize}[leftmargin=*]
+  \item \defn{\emph{Control flow graph (CFG)}: directed graph of program points with edges for possible control transfers.}
+  \item \defn{\emph{Path formula}: conjunction of edge labels along a path, including renamed assignment facts (e.g. $x' = e$).}
+  \item \defn{\emph{Feasible path}: a path whose path formula is satisfiable.}
+\end{itemize}
+
+\subsection*{Key recipes}
+\begin{itemize}[leftmargin=*]
+  \item \idea{\kw{Renaming:} treat each assignment as introducing a fresh ``post'' variable (SSA-like) to keep constraints purely logical.}
+  \item \idea{\kw{Infeasible path pruning:} if the path formula contains a contradiction (e.g. $x\ge 0$ and $\lnot(x\ge 0)$), stop exploring that path.}
+  \item \idea{\kw{Assertion failure search:} negate the assertion condition at the failure node and check satisfiability to find a counterexample trace.}
+\end{itemize}
+
+\subsection*{Pitfalls}
+\begin{itemize}[leftmargin=*]
+  \item \pitfall{Forgetting renaming makes constraints unsound (mixes pre- and post-assignment values).}
+  \item \pitfall{Path explosion: number of paths can be exponential in program size; pruning/invariants are essential.}
+\end{itemize}
+
+\subsection*{Check yourself}
+\begin{enumerate}[leftmargin=*]
+  \item \q{What does it mean if an ``unsafe'' path formula is satisfiable?}
+  \item \q{Why can you discard any path whose formula is unsatisfiable without losing bugs?}
+\end{enumerate}
+
+\clearpage
+\section*{Lecture 9 (Feb 8, 2026): Program Analysis}
+\kw{Goal:} Connect the lecture algorithms to implementable analyses: (1) evaluation with \emph{partial} states, and (2) a def/use analysis to ensure variables are defined before use.
+
+\subsection*{One-page map}
+\begin{itemize}[leftmargin=*]
+  \item \kw{Issue:} the mathematical semantics treats states as total maps; real interpreters may face undefined variables.
+  \item \kw{Evaluation:} define evaluators for expressions ($\evalz$), booleans ($\evalb$), and programs ($\eval$).
+  \item \kw{Static check:} def/use analysis computes which variables a program may use and must define.
+  \item \kw{Guarantee:} if all uses are defined-before-use, evaluation won't get stuck on missing variables.
+\end{itemize}
+
+\subsection*{Core definitions}
+\begin{itemize}[leftmargin=*]
+  \item \defn{\emph{Partial state}: a partial map from variables to integers; $\omega(x)$ may be undefined.}
+  \item \defn{\emph{Use set} $\ms{use}\;\alpha$: variables that $\alpha$ \emph{may} read.}
+  \item \defn{\emph{Def set} $\ms{def}\;\alpha$: variables that $\alpha$ \emph{must} define (on all terminating paths).}
+\end{itemize}
+
+\subsection*{Key recipes}
+\begin{itemize}[leftmargin=*]
+  \item \idea{\kw{Evaluation for sequence:} evaluate $\alpha$ then $\beta$ in the resulting state (account for ``no poststate'' outcomes like failed tests).}
+  \item \idea{\kw{Def/use for conditionals:} $\ms{use}$ is a may-property (union over branches), while $\ms{def}$ is a must-property (intersection over branches).}
+  \item \idea{\kw{Def/use for assignment:} $\ms{def}(x:=e)=\{x\}$ and $\ms{use}(x:=e)=\ms{use}(e)$.}
+\end{itemize}
+
+\subsection*{Pitfalls}
+\begin{itemize}[leftmargin=*]
+  \item \pitfall{Treating $\ms{def}$ as ``may define'' leads to unsoundness: a variable might be undefined on some path.}
+  \item \pitfall{Not accounting for abort/no-poststate behavior (e.g. tests) when implementing $\eval$.}
+\end{itemize}
+
+\subsection*{Check yourself}
+\begin{enumerate}[leftmargin=*]
+  \item \q{Why is $\ms{def}$ for an \texttt{if} the \emph{intersection} of the branch def-sets?}
+  \item \q{Give a 3-line program where a variable is used before it is defined on some path.}
+\end{enumerate}
+
+\clearpage
 \section*{Appendices}
 \noindent\rule{\linewidth}{0.6pt}
 
@@ -522,4 +636,35 @@ with the bounded-iteration clauses:
 \]
 
 \endgroup
+
+
+\section{VCGen + symbolic evaluation + analysis (cheat sheet)}
+\label{app:vcgen-symeval-analysis}
+
+\subsection*{Pure formulas and Hoare triples}
+\kw{Hoare triple:} $\{P\}\,\alpha\,\{Q\}$ abbreviates $P \arrow [\alpha]Q$ where $P,Q$ are \emph{pure} arithmetic formulas (no program modalities).
+
+\subsection*{Weakest liberal precondition (WLP)}
+\begin{itemize}[leftmargin=*]
+  \item \kw{Goal:} compute a pure formula $\ms{wlp}\;\alpha\;Q$ such that proving $P \arrow [\alpha]Q$ reduces to proving $P \arrow \ms{wlp}\;\alpha\;Q$.
+  \item \kw{VC:} $P \arrow \ms{wlp}\;\alpha\;Q$.
+  \item \kw{Sequence:} $\ms{wlp}\;(\alpha \semi \beta)\;Q = \ms{wlp}\;\alpha\;(\ms{wlp}\;\beta\;Q)$.
+  \item \kw{Assignment (pure $Q$):} $\ms{wlp}\;(x:=e)\;Q(x)=Q(e)$.
+  \item \kw{Loops:} require invariant $J$; generate init/preserve/post obligations.
+\end{itemize}
+
+\subsection*{Symbolic evaluation (path formulas)}
+\begin{itemize}[leftmargin=*]
+  \item \kw{Path formula:} conjunction of branch conditions plus equalities from assignments (often with fresh $x'$ variables).
+  \item \kw{Infeasible path:} path formula unsatisfiable $\Rightarrow$ no concrete execution follows it.
+  \item \kw{Bug finding:} assertion-failure node + satisfiable path formula $\Rightarrow$ reachable counterexample trace exists.
+\end{itemize}
+
+\subsection*{Evaluation with partial states + def/use}
+\begin{itemize}[leftmargin=*]
+  \item \kw{Partial state:} $\omega(x)$ may be undefined; evaluation should not read undefined variables.
+  \item \kw{$\ms{use}\;\alpha$:} variables $\alpha$ may read (union across branches).
+  \item \kw{$\ms{def}\;\alpha$:} variables $\alpha$ must define (intersection across branches).
+\end{itemize}
+
 \end{document}
